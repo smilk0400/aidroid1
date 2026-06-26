@@ -62,8 +62,11 @@ body {
   border-radius: 8px;
   font-size: 0.9rem;
   background: var(--card);
+  min-width: 0;
+  max-width: 100%;
 }
-.toolbar input { flex: 1; }
+.toolbar input { flex: 2; }
+.toolbar select { flex: 1; }
 
 .summary { font-size: 0.8rem; color: var(--muted); margin-bottom: 8px; min-height: 1em; }
 
