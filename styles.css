@@ -1,15 +1,16 @@
 :root {
-  --bg: #f4f6f5;
+  --bg: #eef5fb;
   --card: #ffffff;
-  --primary: #2e7d57;
-  --primary-dark: #225e41;
-  --text: #1f2a26;
-  --muted: #6b7770;
-  --border: #e1e6e3;
+  --primary: #4aa3e0;
+  --primary-dark: #2f86c7;
+  --soft: #e4eef8;
+  --text: #1f2a33;
+  --muted: #6b7682;
+  --border: #d3e3f1;
   --danger: #c0392b;
   --warn: #e67e22;
-  --ok: #2e7d57;
-  --shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  --ok: #2e9e6b;
+  --shadow: 0 1px 3px rgba(31, 60, 90, 0.10);
 }
 
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -90,7 +91,7 @@ body {
   width: 56px; height: 56px;
   border-radius: 8px;
   object-fit: cover;
-  background: #eef1ef;
+  background: var(--soft);
   flex-shrink: 0;
   display: flex; align-items: center; justify-content: center;
   font-size: 1.6rem; color: var(--muted);
@@ -148,7 +149,7 @@ body {
 .btn.small { padding: 8px 12px; font-size: 0.85rem; }
 .btn.primary { background: var(--primary); color: #fff; }
 .btn.primary:active { background: var(--primary-dark); }
-.btn.secondary { background: #eef1ef; color: var(--text); }
+.btn.secondary { background: var(--soft); color: var(--text); }
 
 .form-actions { display: flex; gap: 10px; margin-top: 6px; }
 .form-actions .btn { flex: 1; }
