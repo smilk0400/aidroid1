@@ -58,7 +58,7 @@ body {
 .view { display: none; padding: 16px; max-width: 640px; margin: 0 auto; }
 .view.active { display: block; }
 
-.toolbar { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; width: 100%; }
+.toolbar { display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px; width: 100%; }
 .toolbar input, .toolbar select {
   padding: 10px;
   border: 1px solid var(--border);
@@ -68,8 +68,7 @@ body {
   min-width: 0;
   max-width: 100%;
 }
-.toolbar input { flex: 2 1 140px; }
-.toolbar select { flex: 1 1 120px; }
+.toolbar input, .toolbar select { width: 100%; }
 
 .summary { font-size: 0.8rem; color: var(--muted); margin-bottom: 8px; min-height: 1em; }
 
