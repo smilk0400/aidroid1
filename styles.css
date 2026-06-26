@@ -126,7 +126,9 @@ body {
 .row { display: flex; gap: 8px; align-items: stretch; }
 .row input { flex: 1; min-width: 0; }
 #scan-btn { flex-shrink: 0; white-space: nowrap; }
-.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.grid2 { display: grid; grid-template-columns: 96px 1fr; gap: 14px; }
+.grid2 .field { min-width: 0; }
+.field input { min-width: 0; max-width: 100%; }
 
 .btn {
   border: none;
