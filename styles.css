@@ -123,8 +123,9 @@ body {
   background: var(--card);
   color: var(--text);
 }
-.row { display: flex; gap: 8px; }
-.row input { flex: 1; }
+.row { display: flex; gap: 8px; align-items: stretch; }
+.row input { flex: 1; min-width: 0; }
+#scan-btn { flex-shrink: 0; white-space: nowrap; }
 .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
 
 .btn {
