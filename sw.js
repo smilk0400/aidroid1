@@ -1,5 +1,7 @@
-/* 오프라인 캐시 - 앱 셸을 캐싱해 네트워크 없이도 동작. 데이터는 IndexedDB에 별도 저장. */
-const CACHE = 'food-expiry-v1';
+/* 네트워크 우선 + 캐시 폴백
+ * 온라인이면 항상 최신 파일을 받아오고, 오프라인일 때만 캐시를 사용한다.
+ * (개발 중 변경사항이 즉시 반영되도록 cache-first 대신 network-first 사용) */
+const CACHE = 'food-expiry-v3';
 const ASSETS = [
   './',
   './index.html',
@@ -23,12 +25,12 @@ self.addEventListener('activate', (e) => {
 self.addEventListener('fetch', (e) => {
   if (e.request.method !== 'GET') return;
   e.respondWith(
-    caches.match(e.request).then((cached) =>
-      cached || fetch(e.request).then((res) => {
+    fetch(e.request)
+      .then((res) => {
         const copy = res.clone();
         caches.open(CACHE).then((c) => c.put(e.request, copy)).catch(() => {});
         return res;
-      }).catch(() => cached)
-    )
+      })
+      .catch(() => caches.match(e.request))
   );
 });
