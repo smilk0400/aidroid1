@@ -1,0 +1,15 @@
+{
+  "name": "유통기한 관리",
+  "short_name": "유통기한",
+  "description": "음식의 유통기한·수량·구매일자·사진을 이 기기에만 저장하는 로컬 전용 앱",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f4f6f5",
+  "theme_color": "#2e7d57",
+  "lang": "ko",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}

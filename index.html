@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#2e7d57" />
+  <title>유통기한 관리</title>
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="app-header">
+    <h1>🥫 유통기한 관리</h1>
+    <p class="sub">모든 데이터는 이 기기에만 저장됩니다</p>
+  </header>
+
+  <nav class="tabs">
+    <button class="tab active" data-tab="list">목록</button>
+    <button class="tab" data-tab="add">추가</button>
+  </nav>
+
+  <!-- 목록 화면 -->
+  <main id="view-list" class="view active">
+    <div class="toolbar">
+      <input type="search" id="search" placeholder="이름/바코드 검색" />
+      <select id="sort">
+        <option value="expiry">유통기한 임박순</option>
+        <option value="purchase">최근 구매순</option>
+        <option value="name">이름순</option>
+      </select>
+    </div>
+    <div id="summary" class="summary"></div>
+    <ul id="items" class="items"></ul>
+    <p id="empty" class="empty">저장된 항목이 없습니다. "추가" 탭에서 등록하세요.</p>
+  </main>
+
+  <!-- 추가 화면 -->
+  <main id="view-add" class="view">
+    <form id="form" class="form">
+      <input type="hidden" id="item-id" />
+
+      <label class="field">
+        <span>바코드 / 문자열</span>
+        <div class="row">
+          <input type="text" id="barcode" placeholder="바코드 또는 제품명 입력" />
+          <button type="button" id="scan-btn" class="btn secondary">📷 스캔</button>
+        </div>
+      </label>
+
+      <div id="scanner" class="scanner hidden">
+        <video id="video" playsinline muted></video>
+        <div class="scan-line"></div>
+        <button type="button" id="scan-stop" class="btn secondary small">스캔 중지</button>
+        <p id="scan-hint" class="hint"></p>
+      </div>
+
+      <label class="field">
+        <span>제품명</span>
+        <input type="text" id="name" placeholder="예: 우유 1L" required />
+      </label>
+
+      <label class="field">
+        <span>유통기한</span>
+        <input type="date" id="expiry" required />
+      </label>
+
+      <div class="grid2">
+        <label class="field">
+          <span>수량</span>
+          <input type="number" id="quantity" min="1" step="1" value="1" required />
+        </label>
+        <label class="field">
+          <span>구매일자</span>
+          <input type="date" id="purchase" required />
+        </label>
+      </div>
+
+      <label class="field">
+        <span>사진</span>
+        <input type="file" id="photo" accept="image/*" capture="environment" />
+      </label>
+      <div id="photo-preview" class="photo-preview hidden">
+        <img id="photo-img" alt="미리보기" />
+        <button type="button" id="photo-remove" class="btn secondary small">사진 제거</button>
+      </div>
+
+      <div class="form-actions">
+        <button type="submit" class="btn primary" id="save-btn">저장</button>
+        <button type="button" class="btn secondary" id="cancel-btn">취소</button>
+      </div>
+    </form>
+  </main>
+
+  <div id="toast" class="toast hidden"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>
