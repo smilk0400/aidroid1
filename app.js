@@ -127,9 +127,12 @@
           <h3>${escapeHtml(it.name || '(이름 없음)')}</h3>
           <div class="meta">
             <span class="badge ${st.badge}">${st.label}</span>
-            유통기한 ${it.expiry} · 수량 ${it.quantity}<br />
-            구매 ${it.purchase || '-'}
-            ${it.barcode ? `<br /><span class="barcode">${escapeHtml(it.barcode)}</span>` : ''}
+            <span class="facts">
+              <span class="nowrap">유통기한 ${it.expiry}</span>
+              <span class="nowrap">수량 ${it.quantity}</span>
+              <span class="nowrap">구매 ${it.purchase || '-'}</span>
+            </span>
+            ${it.barcode ? `<span class="barcode">${escapeHtml(it.barcode)}</span>` : ''}
           </div>
         </div>
         <div class="actions">
