@@ -70,6 +70,14 @@
       </div>
 
       <label class="field">
+        <span>라벨 글자 인식 (OCR)</span>
+        <button type="button" id="ocr-btn" class="btn secondary">🔤 라벨 촬영해서 제품명·유통기한 읽기</button>
+        <input type="file" id="ocr-file" accept="image/*" capture="environment" class="hidden" />
+        <p id="ocr-status" class="hint left hidden"></p>
+        <div id="ocr-result" class="ocr-result hidden"></div>
+      </label>
+
+      <label class="field">
         <span>제품명</span>
         <input type="text" id="name" placeholder="예: 우유 1L" required />
       </label>

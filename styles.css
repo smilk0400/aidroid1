@@ -177,6 +177,14 @@ body {
 .hint { font-size: 0.78rem; color: var(--muted); text-align: center; margin: 0; }
 .hint.left { text-align: left; }
 
+.ocr-result { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
+.ocr-result .ocr-hint { width: 100%; font-size: 0.78rem; color: var(--muted); }
+.chip {
+  border: 1px solid var(--border); background: var(--soft); color: var(--text);
+  border-radius: 999px; padding: 6px 12px; font-size: 0.85rem; cursor: pointer;
+  max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+
 .photo-preview { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; }
 .photo-preview img { max-width: 100%; max-height: 220px; border-radius: 10px; border: 1px solid var(--border); }
 

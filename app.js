@@ -411,6 +411,125 @@
     return '';
   }
 
+  // ---------- OCR (라벨 글자 인식, 로컬 Tesseract.js) ----------
+  let tesseractPromise = null;
+  function loadTesseract() {
+    if (window.Tesseract) return Promise.resolve();
+    if (tesseractPromise) return tesseractPromise;
+    tesseractPromise = new Promise((resolve, reject) => {
+      const s = document.createElement('script');
+      s.src = 'https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js';
+      s.onload = resolve;
+      s.onerror = () => reject(new Error('OCR 라이브러리를 불러오지 못했습니다(네트워크 확인)'));
+      document.head.appendChild(s);
+    });
+    return tesseractPromise;
+  }
+
+  $('#ocr-btn').addEventListener('click', () => $('#ocr-file').click());
+  $('#ocr-file').addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (file) runOCR(file);
+    e.target.value = '';
+  });
+
+  async function runOCR(file) {
+    const status = $('#ocr-status');
+    status.classList.remove('hidden');
+    status.textContent = '글자 인식 준비 중… (처음엔 한국어 데이터 다운로드로 시간이 걸려요)';
+    try {
+      await loadTesseract();
+      setPhoto(file); // 라벨 사진을 제품 사진으로도 사용
+      const { data } = await Tesseract.recognize(file, 'kor+eng', {
+        logger: (m) => {
+          if (m.status === 'recognizing text') {
+            status.textContent = '글자 인식 중… ' + Math.round((m.progress || 0) * 100) + '%';
+          }
+        },
+      });
+      const text = (data && data.text) || '';
+      handleOcrText(text);
+      status.textContent = text.trim()
+        ? '인식 완료 — 유통기한은 자동 입력, 제품명은 아래에서 선택하세요.'
+        : '글자를 찾지 못했어요. 더 밝고 또렷하게 다시 촬영해보세요.';
+    } catch (err) {
+      status.textContent = '글자 인식 실패: ' + (err && err.message ? err.message : err);
+    }
+  }
+
+  function handleOcrText(text) {
+    const exp = parseExpiryFromText(text);
+    if (exp) {
+      $('#expiry').value = exp;
+      toast('유통기한 인식: ' + exp);
+    }
+    // 제품명 후보: 한글 포함, 날짜/숫자/라벨 줄 제외, 긴 줄 우선
+    const lines = text.split('\n').map((l) => l.trim())
+      .filter((l) => l.length >= 2 && /[가-힣A-Za-z]/.test(l))
+      .filter((l) => !/^[\d\s.\-/]+$/.test(l))
+      .filter((l) => !/(유통\s*기한|소비\s*기한|제조\s*일자|made|date|함량|성분|영양)/i.test(l));
+    const uniq = [...new Set(lines)].sort((a, b) => b.length - a.length).slice(0, 8);
+
+    const box = $('#ocr-result');
+    box.innerHTML = '';
+    if (uniq.length) {
+      if (!$('#name').value.trim()) $('#name').value = uniq[0]; // 가장 긴 줄을 기본 제품명으로
+      const label = document.createElement('div');
+      label.className = 'ocr-hint';
+      label.textContent = '제품명으로 쓸 줄을 누르세요:';
+      box.appendChild(label);
+      uniq.forEach((l) => {
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'chip';
+        b.textContent = l;
+        b.addEventListener('click', () => { $('#name').value = l; toast('제품명 설정: ' + l); });
+        box.appendChild(b);
+      });
+      box.classList.remove('hidden');
+    } else {
+      box.classList.add('hidden');
+    }
+  }
+
+  // 텍스트에서 유통기한 추출 (다양한 한국어 날짜 형식 지원)
+  function parseExpiryFromText(text) {
+    if (!text) return '';
+    const norm = text.replace(/년|월/g, '.').replace(/일/g, ' ').replace(/[~]/g, ' ');
+    const cands = [];
+    const reFull = /(\d{2,4})\s*[.\-/]\s*(\d{1,2})\s*[.\-/]\s*(\d{1,2})/g;
+    let m;
+    while ((m = reFull.exec(norm))) {
+      const iso = toISO(m[1], m[2], m[3]);
+      if (iso) cands.push({ iso, idx: m.index });
+    }
+    const reYM = /(\d{4})\s*[.\-/]\s*(\d{1,2})(?!\s*[.\-/]\s*\d)/g;
+    while ((m = reYM.exec(norm))) {
+      const iso = toISO(m[1], m[2], 0);
+      if (iso) cands.push({ iso, idx: m.index });
+    }
+    if (!cands.length) return '';
+    // '유통기한/소비기한/까지' 뒤에 오는 날짜 우선
+    const labelRe = /(유통\s*기한|소비\s*기한|까지)/g;
+    let bestLabelIdx = -1;
+    while ((m = labelRe.exec(norm))) bestLabelIdx = m.index;
+    if (bestLabelIdx >= 0) {
+      const after = cands.filter((c) => c.idx >= bestLabelIdx).sort((a, b) => a.idx - b.idx);
+      if (after.length) return after[0].iso;
+    }
+    // 아니면 가장 늦은(미래) 날짜 = 보통 유통기한
+    return cands.sort((a, b) => (a.iso < b.iso ? 1 : -1))[0].iso;
+  }
+
+  function toISO(y, mo, d) {
+    let year = +y, mm = +mo, dd = +d;
+    if (year < 100) year += 2000;
+    if (year < 2000 || year > 2100 || mm < 1 || mm > 12) return '';
+    if (dd === 0) dd = new Date(year, mm, 0).getDate();
+    if (dd < 1 || dd > 31) return '';
+    return `${year}-${String(mm).padStart(2, '0')}-${String(dd).padStart(2, '0')}`;
+  }
+
   // ---------- 설정 (API 키) ----------
   const settingsPanel = $('#settings');
   $('#settings-btn').addEventListener('click', () => {
