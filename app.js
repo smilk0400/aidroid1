@@ -353,12 +353,19 @@
     return `${year}-${String(mm).padStart(2, '0')}-${String(dd).padStart(2, '0')}`;
   }
 
-  // Open Food Facts 온라인 제품명 조회 (오프라인/실패 시 조용히 무시)
+  // 제품명 조회: 국내(식약처) 우선 → Open Food Facts 폴백
   async function lookupProductName(code) {
     const digits = String(code).replace(/\D/g, '');
     if (digits.length < 8) return;
     if ($('#name').value.trim()) return; // 이미 이름 있으면 건드리지 않음
-    const hint = $('#scan-hint');
+
+    const krName = await lookupKorean(digits);
+    if (krName) {
+      $('#name').value = krName;
+      toast('국내 제품명: ' + krName);
+      return;
+    }
+
     try {
       const url = `https://world.openfoodfacts.org/api/v2/product/${digits}.json?fields=product_name,product_name_ko,brands`;
       const res = await fetch(url);
@@ -372,6 +379,42 @@
       }
     } catch (_) { /* 네트워크 없음 등 무시 */ }
   }
+
+  // 식약처 식품안전나라 바코드제품정보(C005) 조회 (공개 CORS 프록시 경유)
+  async function lookupKorean(barcode) {
+    const key = (localStorage.getItem('mfds_api_key') || '').trim();
+    if (!key) return '';
+    try {
+      const api = `http://openapi.foodsafetykorea.go.kr/api/${key}/C005/json/1/5/BAR_CD=${barcode}`;
+      const url = `https://api.allorigins.win/raw?url=${encodeURIComponent(api)}`;
+      const res = await fetch(url);
+      if (!res.ok) return '';
+      const data = await res.json();
+      const rows = (data.C005 && data.C005.row) || [];
+      if (!rows.length) return '';
+      const r = rows[0];
+      const nm = (r.PRDLST_NM || r.PRDT_NM || '').trim();
+      const mfr = (r.BSSH_NM || '').trim();
+      return nm ? (mfr ? `${nm} (${mfr})` : nm) : '';
+    } catch (_) {
+      return '';
+    }
+  }
+
+  // ---------- 설정 (API 키) ----------
+  const settingsPanel = $('#settings');
+  $('#settings-btn').addEventListener('click', () => {
+    $('#api-key').value = localStorage.getItem('mfds_api_key') || '';
+    settingsPanel.classList.toggle('hidden');
+  });
+  $('#settings-close').addEventListener('click', () => settingsPanel.classList.add('hidden'));
+  $('#settings-save').addEventListener('click', () => {
+    const v = $('#api-key').value.trim();
+    if (v) localStorage.setItem('mfds_api_key', v);
+    else localStorage.removeItem('mfds_api_key');
+    settingsPanel.classList.add('hidden');
+    toast(v ? 'API 키 저장됨' : 'API 키 삭제됨');
+  });
 
   // 바코드를 직접 입력/수정했을 때도 조회 시도
   $('#barcode').addEventListener('change', () => {

@@ -10,9 +10,23 @@
 </head>
 <body>
   <header class="app-header">
+    <button type="button" id="settings-btn" class="settings-btn" title="설정">⚙️</button>
     <h1>🥫 유통기한 관리</h1>
     <p class="sub">모든 데이터는 이 기기에만 저장됩니다</p>
   </header>
+
+  <section id="settings" class="settings-panel hidden">
+    <h2>설정</h2>
+    <label class="field">
+      <span>식약처 식품안전나라 API 키</span>
+      <input type="text" id="api-key" placeholder="발급받은 인증키 붙여넣기" autocomplete="off" />
+    </label>
+    <p class="hint left">키는 이 기기(브라우저)에만 저장됩니다. 국내 가공식품 제품명 조회 시, 키와 바코드가 공개 중계 서버를 거쳐 식약처 API로 전달됩니다.</p>
+    <div class="form-actions">
+      <button type="button" id="settings-save" class="btn primary">저장</button>
+      <button type="button" id="settings-close" class="btn secondary">닫기</button>
+    </div>
+  </section>
 
   <nav class="tabs">
     <button class="tab active" data-tab="list">목록</button>

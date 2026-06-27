@@ -28,6 +28,7 @@ body {
 }
 
 .app-header {
+  position: relative;
   background: var(--primary);
   color: #fff;
   padding: 16px;
@@ -35,6 +36,19 @@ body {
 }
 .app-header h1 { margin: 0; font-size: 1.3rem; }
 .app-header .sub { margin: 4px 0 0; font-size: 0.75rem; opacity: 0.85; }
+.settings-btn {
+  position: absolute; top: 12px; right: 12px;
+  border: none; background: rgba(255, 255, 255, 0.2); color: #fff;
+  width: 38px; height: 38px; border-radius: 10px;
+  font-size: 1.1rem; cursor: pointer;
+}
+
+.settings-panel {
+  max-width: 640px; margin: 0 auto; padding: 16px;
+  background: var(--card); border-bottom: 1px solid var(--border);
+  display: flex; flex-direction: column; gap: 12px;
+}
+.settings-panel h2 { margin: 0; font-size: 1.05rem; }
 
 .tabs {
   display: flex;
