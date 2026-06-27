@@ -22,6 +22,11 @@
       <input type="text" id="api-key" placeholder="발급받은 인증키 붙여넣기" autocomplete="off" />
     </label>
     <p class="hint left">키는 이 기기(브라우저)에만 저장됩니다. 국내 가공식품 제품명 조회 시, 키와 바코드가 공개 중계 서버를 거쳐 식약처 API로 전달됩니다.</p>
+    <label class="field">
+      <span>CLOVA OCR 프록시 URL (선택)</span>
+      <input type="text" id="clova-url" placeholder="예: https://your-worker.workers.dev" autocomplete="off" />
+    </label>
+    <p class="hint left">입력하면 라벨 OCR이 네이버 CLOVA(고정확도)로 동작합니다. 비우면 기기 내 로컬 OCR을 사용합니다. (Cloudflare Worker 설정법은 README 참고)</p>
     <div class="form-actions">
       <button type="button" id="settings-save" class="btn primary">저장</button>
       <button type="button" id="settings-close" class="btn secondary">닫기</button>

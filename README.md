@@ -34,6 +34,29 @@ npx serve .
   미지원 시 자동 인식 대신 바코드 번호를 수동 입력하면 됩니다.
 - 사진/저장 기능은 최신 브라우저 전반에서 동작합니다.
 
+## 라벨 OCR (제품명·유통기한 글자 인식)
+
+- 기본은 **기기 내 로컬 OCR**(Tesseract.js, 한국어). 키·서버 불필요.
+- 더 높은 정확도를 원하면 **네이버 CLOVA OCR**로 업그레이드할 수 있습니다.
+
+### CLOVA OCR 연동 (선택)
+
+CLOVA OCR은 브라우저에서 직접 호출이 불가(CORS)하고, 시크릿 키를 클라이언트에
+두면 안 되므로 **본인 소유의 Cloudflare Worker 프록시**를 둡니다.
+
+1. **CLOVA OCR 도메인 생성** — 네이버 클라우드 플랫폼 콘솔 → CLOVA OCR →
+   Domain 생성 후 **APIGW Invoke URL**(`.../general`)과 **Secret Key** 확보
+2. **Cloudflare Worker 배포**
+   - Cloudflare → Workers & Pages → Create Worker
+   - 저장소의 [`clova-proxy.worker.js`](./clova-proxy.worker.js) 내용을 붙여넣고 Deploy
+   - Worker Settings → Variables(Secret)에 추가:
+     - `CLOVA_INVOKE_URL` = APIGW Invoke URL
+     - `CLOVA_SECRET` = Secret Key
+3. **앱 설정**(⚙️) → "CLOVA OCR 프록시 URL"에 배포된 워커 주소 입력 → 저장
+
+설정하면 라벨 OCR이 CLOVA로 동작하고, 실패 시 자동으로 로컬 OCR로 폴백합니다.
+시크릿 키는 워커(서버)에만 있고 앱/저장소에는 저장되지 않습니다.
+
 ## 데이터 저장 위치
 
 - 항목/사진: 브라우저 **IndexedDB** (`food-expiry-db`)

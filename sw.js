@@ -1,7 +1,7 @@
 /* 네트워크 우선 + 캐시 폴백
  * 온라인이면 항상 최신 파일을 받아오고, 오프라인일 때만 캐시를 사용한다.
  * (개발 중 변경사항이 즉시 반영되도록 cache-first 대신 network-first 사용) */
-const CACHE = 'food-expiry-v10';
+const CACHE = 'food-expiry-v11';
 const ASSETS = [
   './',
   './index.html',

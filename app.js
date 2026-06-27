@@ -436,14 +436,26 @@
   async function runOCR(file) {
     const status = $('#ocr-status');
     status.classList.remove('hidden');
+    setPhoto(file); // 라벨 사진을 제품 사진으로도 사용
+
+    // 1) CLOVA OCR(프록시) 설정돼 있으면 우선 사용
+    if ((localStorage.getItem('clova_url') || '').trim()) {
+      try {
+        const ok = await runClovaOCR(file, status);
+        if (ok) return;
+      } catch (err) {
+        status.textContent = 'CLOVA 실패(' + (err && err.message ? err.message : err) + ') → 로컬 OCR로 전환…';
+      }
+    }
+
+    // 2) 로컬 Tesseract 폴백
     status.textContent = '글자 인식 준비 중… (처음엔 한국어 데이터 다운로드로 시간이 걸려요)';
     try {
       await loadTesseract();
-      setPhoto(file); // 라벨 사진을 제품 사진으로도 사용
       const { data } = await Tesseract.recognize(file, 'kor+eng', {
         logger: (m) => {
           if (m.status === 'recognizing text') {
-            status.textContent = '글자 인식 중… ' + Math.round((m.progress || 0) * 100) + '%';
+            status.textContent = '로컬 인식 중… ' + Math.round((m.progress || 0) * 100) + '%';
           }
         },
       });
@@ -455,6 +467,54 @@
     } catch (err) {
       status.textContent = '글자 인식 실패: ' + (err && err.message ? err.message : err);
     }
+  }
+
+  // CLOVA OCR (본인 소유 프록시 경유). 성공 시 true 반환
+  async function runClovaOCR(file, status) {
+    const url = (localStorage.getItem('clova_url') || '').trim();
+    if (!url) return false;
+    status.textContent = 'CLOVA OCR 인식 중…';
+    const image = await fileToScaledJpegBase64(file, 1600, 0.85);
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ image, format: 'jpg' }),
+    });
+    if (!res.ok) throw new Error('프록시 응답 ' + res.status);
+    const data = await res.json();
+    if (data && data.error) throw new Error(data.error);
+    const text = (data && data.text) || extractClovaText(data) || '';
+    handleOcrText(text);
+    status.textContent = text.trim()
+      ? 'CLOVA 인식 완료 — 유통기한 자동 입력, 제품명은 아래에서 선택하세요.'
+      : 'CLOVA가 글자를 찾지 못했어요. 더 또렷하게 다시 촬영해보세요.';
+    return true;
+  }
+
+  function extractClovaText(data) {
+    try {
+      const fields = (data.raw || data).images[0].fields || [];
+      return fields.map((f) => f.inferText).join(' ');
+    } catch (_) { return ''; }
+  }
+
+  // 이미지 리사이즈 후 JPEG base64(접두사 제외) 반환 — 전송량/속도 최적화
+  function fileToScaledJpegBase64(file, maxDim, quality) {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => {
+        let { width, height } = img;
+        const scale = Math.min(1, maxDim / Math.max(width, height));
+        const w = Math.round(width * scale), h = Math.round(height * scale);
+        const c = document.createElement('canvas');
+        c.width = w; c.height = h;
+        c.getContext('2d').drawImage(img, 0, 0, w, h);
+        URL.revokeObjectURL(img.src);
+        resolve(c.toDataURL('image/jpeg', quality).split(',')[1]);
+      };
+      img.onerror = () => reject(new Error('이미지 로드 실패'));
+      img.src = URL.createObjectURL(file);
+    });
   }
 
   function handleOcrText(text) {
@@ -534,6 +594,7 @@
   const settingsPanel = $('#settings');
   $('#settings-btn').addEventListener('click', () => {
     $('#api-key').value = localStorage.getItem('mfds_api_key') || '';
+    $('#clova-url').value = localStorage.getItem('clova_url') || '';
     settingsPanel.classList.toggle('hidden');
   });
   $('#settings-close').addEventListener('click', () => settingsPanel.classList.add('hidden'));
@@ -541,8 +602,13 @@
     const v = $('#api-key').value.trim();
     if (v) localStorage.setItem('mfds_api_key', v);
     else localStorage.removeItem('mfds_api_key');
+
+    const c = $('#clova-url').value.trim().replace(/\/$/, '');
+    if (c) localStorage.setItem('clova_url', c);
+    else localStorage.removeItem('clova_url');
+
     settingsPanel.classList.add('hidden');
-    toast(v ? 'API 키 저장됨' : 'API 키 삭제됨');
+    toast('설정 저장됨');
   });
 
   // 바코드를 직접 입력/수정했을 때도 조회 시도
