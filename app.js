@@ -277,10 +277,8 @@
         const codes = await detector.detect(video);
         if (codes && codes.length) {
           const value = codes[0].rawValue;
-          $('#barcode').value = value;
-          if (!$('#name').value) $('#name').focus();
-          toast('바코드 인식: ' + value);
           stopScan();
+          handleScanned(value);
           return;
         }
       } catch (_) { /* 무시하고 계속 */ }
@@ -288,6 +286,98 @@
     };
     requestAnimationFrame(scanLoop);
   }
+
+  // 스캔/입력된 코드 처리: GS1이면 유통기한 등 추출, 아니면 숫자 바코드로 취급
+  async function handleScanned(value) {
+    const gs1 = parseGS1(value);
+    let code = value;
+    if (gs1) {
+      if (gs1.gtin) code = gs1.gtin;
+      $('#barcode').value = code;
+      const msgs = ['GS1 인식'];
+      if (gs1.expiry) { $('#expiry').value = gs1.expiry; msgs.push('유통기한 ' + gs1.expiry); }
+      if (gs1.lot) msgs.push('로트 ' + gs1.lot);
+      toast(msgs.join(' · '));
+    } else {
+      $('#barcode').value = value;
+      toast('바코드 인식: ' + value);
+    }
+    await lookupProductName(code);
+    if (!$('#name').value) $('#name').focus();
+  }
+
+  // GS1 바코드(괄호표기 또는 FNC1 구분) 파싱 → { gtin, expiry(YYYY-MM-DD), lot }
+  function parseGS1(raw) {
+    if (!raw) return null;
+    const GS = String.fromCharCode(29);
+    let s = String(raw).replace(/^\][A-Za-z]\d/, ''); // 심볼로지 식별자 제거
+    const out = {};
+    if (s.indexOf('(') !== -1) {
+      const re = /\((\d{2,4})\)([^(]*)/g; let m;
+      while ((m = re.exec(s))) out[m[1]] = m[2].split(GS).join('').trim();
+    } else {
+      if (s.indexOf(GS) === -1 && !/^(01|02|17|10|11|15)/.test(s)) return null;
+      const fixed = { '00': 18, '01': 14, '02': 14, '11': 6, '12': 6, '13': 6, '15': 6, '16': 6, '17': 6, '20': 2 };
+      let i = 0;
+      while (i < s.length) {
+        if (s[i] === GS) { i++; continue; }
+        const ai = s.substr(i, 2);
+        if (fixed[ai] != null) {
+          out[ai] = s.substr(i + 2, fixed[ai]);
+          i += 2 + fixed[ai];
+        } else {
+          let j = s.indexOf(GS, i + 2);
+          if (j === -1) j = s.length;
+          out[ai] = s.substring(i + 2, j);
+          i = j;
+        }
+      }
+    }
+    if (!Object.keys(out).length) return null;
+    const res = {};
+    if (out['01']) res.gtin = out['01'].replace(/^0+(?=\d{13})/, ''); // GTIN-14 앞 0 제거
+    if (out['02']) res.gtin = res.gtin || out['02'];
+    const exp = out['17'] || out['15'];
+    if (exp) res.expiry = gs1DateToISO(exp);
+    if (out['10']) res.lot = out['10'];
+    return (res.gtin || res.expiry || res.lot) ? res : null;
+  }
+
+  function gs1DateToISO(d) {
+    if (!/^\d{6}$/.test(d)) return '';
+    const yy = +d.slice(0, 2), mm = +d.slice(2, 4);
+    let dd = +d.slice(4, 6);
+    const year = 2000 + yy;
+    if (mm < 1 || mm > 12) return '';
+    if (dd === 0) dd = new Date(year, mm, 0).getDate(); // DD=00 → 그 달 말일
+    return `${year}-${String(mm).padStart(2, '0')}-${String(dd).padStart(2, '0')}`;
+  }
+
+  // Open Food Facts 온라인 제품명 조회 (오프라인/실패 시 조용히 무시)
+  async function lookupProductName(code) {
+    const digits = String(code).replace(/\D/g, '');
+    if (digits.length < 8) return;
+    if ($('#name').value.trim()) return; // 이미 이름 있으면 건드리지 않음
+    const hint = $('#scan-hint');
+    try {
+      const url = `https://world.openfoodfacts.org/api/v2/product/${digits}.json?fields=product_name,product_name_ko,brands`;
+      const res = await fetch(url);
+      if (!res.ok) return;
+      const data = await res.json();
+      const p = data.product || {};
+      const name = (p.product_name_ko || p.product_name || '').trim();
+      if (name) {
+        $('#name').value = p.brands ? `${name} (${String(p.brands).split(',')[0].trim()})` : name;
+        toast('제품명 조회: ' + name);
+      }
+    } catch (_) { /* 네트워크 없음 등 무시 */ }
+  }
+
+  // 바코드를 직접 입력/수정했을 때도 조회 시도
+  $('#barcode').addEventListener('change', () => {
+    const v = $('#barcode').value.trim();
+    if (v) handleScanned(v);
+  });
 
   function stopScan() {
     scanLoop = null;
