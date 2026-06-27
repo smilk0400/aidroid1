@@ -380,26 +380,35 @@
     } catch (_) { /* 네트워크 없음 등 무시 */ }
   }
 
-  // 식약처 식품안전나라 바코드제품정보(C005) 조회 (공개 CORS 프록시 경유)
+  // 식약처 식품안전나라 바코드제품정보(C005) 조회
+  // 직접 호출 → 공개 프록시 순차 시도 (한 곳이 죽어도 다음으로)
   const DEFAULT_API_KEY = '98a4f9141aad46aa87b1';
+  const PROXIES = [
+    (u) => u,                                                                  // 직접(HTTPS)
+    (u) => `https://api.codetabs.com/v1/proxy/?quest=${encodeURIComponent(u)}`,
+    (u) => `https://corsproxy.io/?url=${encodeURIComponent(u)}`,
+    (u) => `https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`,
+  ];
+
   async function lookupKorean(barcode) {
     const key = (localStorage.getItem('mfds_api_key') || DEFAULT_API_KEY).trim();
     if (!key) return '';
-    try {
-      const api = `http://openapi.foodsafetykorea.go.kr/api/${key}/C005/json/1/5/BAR_CD=${barcode}`;
-      const url = `https://api.allorigins.win/raw?url=${encodeURIComponent(api)}`;
-      const res = await fetch(url);
-      if (!res.ok) return '';
-      const data = await res.json();
-      const rows = (data.C005 && data.C005.row) || [];
-      if (!rows.length) return '';
-      const r = rows[0];
-      const nm = (r.PRDLST_NM || r.PRDT_NM || '').trim();
-      const mfr = (r.BSSH_NM || '').trim();
-      return nm ? (mfr ? `${nm} (${mfr})` : nm) : '';
-    } catch (_) {
-      return '';
+    const api = `https://openapi.foodsafetykorea.go.kr/api/${key}/C005/json/1/5/BAR_CD=${barcode}`;
+    for (const wrap of PROXIES) {
+      try {
+        const res = await fetch(wrap(api));
+        if (!res.ok) continue;
+        const data = JSON.parse(await res.text());
+        if (!data || !data.C005) continue;          // 형식이 다르면 다음 프록시
+        const rows = data.C005.row || [];
+        if (!rows.length) return '';                // 정상 응답이나 제품 없음 → 종료
+        const r = rows[0];
+        const nm = (r.PRDLST_NM || r.PRDT_NM || '').trim();
+        const mfr = (r.BSSH_NM || '').trim();
+        return nm ? (mfr ? `${nm} (${mfr})` : nm) : '';
+      } catch (_) { /* 다음 프록시로 */ }
     }
+    return '';
   }
 
   // ---------- 설정 (API 키) ----------
