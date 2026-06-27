@@ -381,8 +381,9 @@
   }
 
   // 식약처 식품안전나라 바코드제품정보(C005) 조회 (공개 CORS 프록시 경유)
+  const DEFAULT_API_KEY = '98a4f9141aad46aa87b1';
   async function lookupKorean(barcode) {
-    const key = (localStorage.getItem('mfds_api_key') || '').trim();
+    const key = (localStorage.getItem('mfds_api_key') || DEFAULT_API_KEY).trim();
     if (!key) return '';
     try {
       const api = `http://openapi.foodsafetykorea.go.kr/api/${key}/C005/json/1/5/BAR_CD=${barcode}`;
