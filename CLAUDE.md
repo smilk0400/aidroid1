@@ -2,69 +2,90 @@
 
 Guidance for AI assistants (and humans) working in this repository.
 
-## Repository status
+## Overview
 
-This repository (`smilk0400/aidroid1`) is currently a **bare starter repo**. As of
-the latest commit it contains essentially no application code:
+`aidroid1` is a **Node.js** project (ES modules, Node ≥ 20). It is an early-stage
+scaffold: a small library module, an executable entry point, a test suite using
+the built-in Node test runner, and linting/formatting via ESLint + Prettier.
+
+## Project structure
 
 ```
 .
-├── CLAUDE.md   # this file
-└── s1          # placeholder file, contains the text "start"
+├── CLAUDE.md            # this file — guidance for AI assistants
+├── README.md            # human-facing project readme
+├── package.json         # metadata, scripts, dependencies (ESM: "type": "module")
+├── package-lock.json    # pinned dependency tree (committed)
+├── eslint.config.js     # ESLint flat config
+├── .prettierrc.json     # Prettier formatting rules
+├── .gitignore
+├── src/
+│   ├── index.js         # entry point (npm start) — CLI: prints a greeting
+│   └── lib/
+│       └── greet.js     # example library module (exports `greet`)
+└── test/
+    └── greet.test.js    # tests for src/lib/greet.js (node:test)
 ```
 
-There is **no** source tree, build system, dependency manifest, test suite,
-CI configuration, or linter set up yet. Treat the project as greenfield: the
-conventions below describe how to introduce structure as the codebase grows,
-not an existing system to conform to.
+## Development workflow
 
-> When real code lands, update this file to document the actual structure,
-> commands, and conventions. Keep it in sync with the repository's real state —
-> do not let it drift into describing things that no longer exist (or never did).
+Install dependencies first (requires network access):
 
-## Working in this repo
+```bash
+npm install
+```
 
-### Branching
+Common commands (all defined in `package.json` `scripts`):
 
-- All development happens on dedicated feature branches, **never** directly on `main`.
-- The active working branch for the current effort is `claude/claude-md-docs-frlyjm`.
-- Create branches off `main` and keep them focused on a single change.
+| Command                | What it does                                         |
+| ---------------------- | ---------------------------------------------------- |
+| `npm start`            | Run the app (`node src/index.js`); optional name arg |
+| `npm test`             | Run the test suite (`node --test`)                   |
+| `npm run test:watch`   | Run tests in watch mode                              |
+| `npm run lint`         | Lint with ESLint                                     |
+| `npm run lint:fix`     | Lint and auto-fix                                    |
+| `npm run format`       | Format all files with Prettier                       |
+| `npm run format:check` | Check formatting without writing                     |
 
-### Commits
+Example: `npm start -- Ada` prints `Hello, Ada!`.
 
-- Write clear, descriptive commit messages in the imperative mood
-  (e.g. "Add build script", not "Added build script").
-- Keep commits scoped and self-contained.
+Before committing, run `npm test`, `npm run lint`, and `npm run format:check`
+(or `npm run format`) so changes stay green.
 
-### Pushing
+## Conventions
 
+- **ES modules only.** `package.json` sets `"type": "module"`. Use `import` /
+  `export`, and include the `.js` extension in relative imports
+  (e.g. `import { greet } from "./lib/greet.js";`).
+- **Node ≥ 20.** Rely on the built-in test runner (`node:test`) and
+  `node:assert/strict` — no third-party test framework.
+- **Tests** live in `test/`, named `*.test.js`, and import from `src/`.
+- **Library code** goes in `src/lib/`; the runnable entry point is `src/index.js`.
+- **Formatting** is Prettier-owned (see `.prettierrc.json`): semicolons, double
+  quotes, 80-column width. Don't hand-format against it — run `npm run format`.
+- **Linting** uses ESLint's flat config (`eslint.config.js`) with the
+  recommended ruleset; unused vars are warnings.
+- **JSDoc** comments are used on exported functions; keep them accurate when
+  changing signatures.
+- Validate inputs and throw `TypeError` for bad argument types, as in
+  `src/lib/greet.js`.
+
+When adding a new module, mirror the existing style: a focused file under
+`src/lib/`, a matching `test/<name>.test.js`, and JSDoc on exports.
+
+## Git workflow
+
+- Develop on dedicated feature branches; **never** commit directly to `main`.
+- The active working branch for the current effort is
+  `claude/claude-md-docs-frlyjm`.
 - Push with `git push -u origin <branch-name>`.
-- Do **not** push to `main` or any branch other than the designated working
-  branch without explicit permission.
-- Do **not** open a pull request unless explicitly asked.
+- Do **not** push to `main` or another branch, and do **not** open a pull
+  request, without explicit permission.
+- Commit `package-lock.json`; do **not** commit `node_modules/` (gitignored).
 
-## Conventions to establish as the project grows
+## Keeping this file current
 
-Because nothing is wired up yet, an assistant adding the first real code should:
-
-1. **Pick and document the stack.** When introducing a language/framework, add
-   the appropriate manifest (e.g. `package.json`, `pyproject.toml`, `go.mod`,
-   `Cargo.toml`) and record the chosen toolchain here.
-2. **Add reproducible commands.** Once a build/test/lint setup exists, document
-   the exact commands under a new "Development workflow" section, for example:
-   - Install dependencies
-   - Build
-   - Run tests
-   - Lint / format
-3. **Mirror the existing style.** After the first module exists, match its
-   naming, formatting, and structure rather than introducing competing patterns.
-4. **Keep this file current.** Update the structure diagram and commands
-   whenever they change.
-
-## Notes
-
-- The `s1` file is a placeholder and carries no functional meaning. It can be
-  removed once real project files exist, unless a later change gives it a purpose.
-- The repository name `aidroid1` suggests an AI/Android-oriented project, but the
-  intended scope is not yet defined in code. Confirm direction with the user
-  before assuming a particular stack.
+Update this document whenever the structure, commands, or conventions change —
+new top-level directories, new scripts in `package.json`, a switch in tooling,
+or added dependencies. Keep the structure diagram and command table in sync with
+reality.
