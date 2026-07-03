@@ -1,0 +1,47 @@
+plugins {
+    id 'com.android.application'
+}
+
+android {
+    namespace 'com.aicrea.dashboard'
+    compileSdk 34
+
+    defaultConfig {
+        applicationId "com.aicrea.dashboard"
+        minSdk 24
+        targetSdk 34
+        versionCode 1
+        versionName "1.0"
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}
+
+dependencies {
+    implementation 'androidx.appcompat:appcompat:1.7.0'
+    implementation 'androidx.webkit:webkit:1.11.0'
+}
+
+// 루트의 웹 결과물(index.html, src/, vendor/)을 앱 assets 로 복사.
+// 웹 소스는 루트 한 곳에서만 관리하고, 빌드 시 assets 로 동기화한다.
+def webAssetsDir = layout.projectDirectory.dir("src/main/assets")
+
+tasks.register('copyWebAssets', Copy) {
+    into webAssetsDir
+    from(rootProject.file("index.html"))
+    from(rootProject.file("src")) { into "src" }
+    from(rootProject.file("vendor")) { into "vendor" }
+}
+
+tasks.named('preBuild') {
+    dependsOn 'copyWebAssets'
+}

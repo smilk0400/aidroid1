@@ -1,4 +1,19 @@
+# Node (웹 자산 vendoring / 검증용)
 node_modules/
 package-lock.json
 *.log
+
+# Android / Gradle
+.gradle/
+build/
+local.properties
+*.iml
+.idea/
+captures/
+.externalNativeBuild/
+.cxx/
+
+# 빌드 시 루트 웹 결과물에서 복사되는 앱 assets (생성물 — 커밋하지 않음)
+/app/src/main/assets/
+
 .DS_Store
