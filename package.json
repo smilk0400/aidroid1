@@ -1,0 +1,13 @@
+{
+  "name": "aicrea-3d-dashboard",
+  "version": "1.0.0",
+  "description": "aicrea 매출채널별 손익 3D 인터랙티브 메인페이지 (three.js)",
+  "type": "module",
+  "scripts": {
+    "start": "python3 -m http.server 8123",
+    "serve": "npx --yes serve -l 8123 ."
+  },
+  "dependencies": {
+    "three": "^0.164.0"
+  }
+}
