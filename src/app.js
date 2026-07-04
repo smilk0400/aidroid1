@@ -6,22 +6,22 @@ import { channels, totals, meta, maxRevenue, maxAbsOp } from './data.js';
 /* ---------------------------------------------------------------- 유틸 */
 const fmt = (n) => n.toLocaleString('ko-KR', { maximumFractionDigits: 1 });
 const pct = (n) => (n * 100).toFixed(1) + '%';
-// 영업이익률 → 색 (손실 빨강 · 저마진 앰버 · 고마진 그린)
+// 영업이익률 → 색 (손실 빨강 · 저마진 앰버 · 고마진 그린) — 화이트 배경용 톤
 function marginColor(m) {
-  if (m < 0) return new THREE.Color('#ff4d5e');
-  if (m < 0.12) return new THREE.Color('#f6b93b');
-  if (m < 0.22) return new THREE.Color('#7bd88f');
-  return new THREE.Color('#2ecc71');
+  if (m < 0) return new THREE.Color('#e5484d');
+  if (m < 0.12) return new THREE.Color('#e0a020');
+  if (m < 0.22) return new THREE.Color('#4caf6e');
+  return new THREE.Color('#1f9d57');
 }
 
 /* ---------------------------------------------------------------- 씬 기본 */
 const stage = document.getElementById('stage');
 const scene = new THREE.Scene();
-scene.background = new THREE.Color('#0a0e1a');
-scene.fog = new THREE.Fog('#0a0e1a', 24, 60);
+scene.background = new THREE.Color('#ffffff');
+scene.fog = new THREE.Fog('#ffffff', 30, 80);
 
 const camera = new THREE.PerspectiveCamera(50, innerWidth / innerHeight, 0.1, 200);
-camera.position.set(0, 9, 20);
+camera.position.set(0, 11, 19);
 
 const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
 renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
@@ -36,19 +36,21 @@ labelRenderer.setSize(innerWidth, innerHeight);
 labelRenderer.domElement.className = 'label-layer';
 stage.appendChild(labelRenderer.domElement);
 
-const controls = new OrbitControls(camera, labelRenderer.domElement);
+// OrbitControls 는 실제 WebGL 캔버스에 연결해야 드래그·줌이 동작한다.
+// (라벨 오버레이 레이어는 pointer-events:none 이라 이벤트를 못 받음)
+const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
 controls.dampingFactor = 0.08;
 controls.minDistance = 10;
-controls.maxDistance = 42;
+controls.maxDistance = 44;
 controls.maxPolarAngle = Math.PI * 0.49;
 controls.target.set(0, 2.5, 0);
 controls.autoRotate = true;
 controls.autoRotateSpeed = 0.6;
 
-/* ---------------------------------------------------------------- 조명 */
-scene.add(new THREE.HemisphereLight('#9fb4ff', '#0a0e1a', 0.55));
-const key = new THREE.DirectionalLight('#ffffff', 1.6);
+/* ---------------------------------------------------------------- 조명 (화이트) */
+scene.add(new THREE.HemisphereLight('#ffffff', '#dfe3e8', 0.95));
+const key = new THREE.DirectionalLight('#ffffff', 1.2);
 key.position.set(8, 18, 10);
 key.castShadow = true;
 key.shadow.mapSize.set(2048, 2048);
@@ -56,19 +58,19 @@ key.shadow.camera.left = -20; key.shadow.camera.right = 20;
 key.shadow.camera.top = 20; key.shadow.camera.bottom = -20;
 key.shadow.bias = -0.0004;
 scene.add(key);
-const rim = new THREE.DirectionalLight('#5b8cff', 0.7);
+const rim = new THREE.DirectionalLight('#c7d0dc', 0.5);
 rim.position.set(-10, 6, -12);
 scene.add(rim);
 
 /* ---------------------------------------------------------------- 바닥 */
-const grid = new THREE.GridHelper(60, 60, 0x2a3a6a, 0x16203c);
+const grid = new THREE.GridHelper(60, 60, 0xb8c0cc, 0xe0e4ea);
 grid.material.transparent = true;
-grid.material.opacity = 0.5;
+grid.material.opacity = 0.55;
 scene.add(grid);
 // 그림자만 받는 투명 바닥
 const shadowFloor = new THREE.Mesh(
   new THREE.PlaneGeometry(80, 80),
-  new THREE.ShadowMaterial({ opacity: 0.35 })
+  new THREE.ShadowMaterial({ opacity: 0.12 })
 );
 shadowFloor.rotation.x = -Math.PI / 2;
 shadowFloor.position.y = 0.001;
@@ -77,25 +79,26 @@ scene.add(shadowFloor);
 
 /* ---------------------------------------------------------------- 막대 생성 */
 const HEIGHT_SCALE = 7 / maxRevenue; // 최대매출 → 7 유닛
-const GAP = 3.4;
+const RADIUS = 6.6;                  // 원형 배치 반지름
 const bars = [];
 const group = new THREE.Group();
 scene.add(group);
 
 channels.forEach((c, i) => {
-  const x = (i - (channels.length - 1) / 2) * GAP;
+  // 채널을 XZ 평면상 원을 그리며 배치
+  const ang = (i / channels.length) * Math.PI * 2 - Math.PI / 2;
   const g = new THREE.Group();
-  g.position.x = x;
+  g.position.set(Math.cos(ang) * RADIUS, 0, Math.sin(ang) * RADIUS);
 
-  // 외곽 막대: 매출(유리질 반투명)
+  // 외곽 막대: 매출(옅은 그레이 유리질) — 채널색을 아주 옅게만 남김
   const revH = c.revenue * HEIGHT_SCALE;
   const outer = new THREE.Mesh(
     new THREE.BoxGeometry(1.7, revH, 1.7),
     new THREE.MeshPhysicalMaterial({
-      color: new THREE.Color(c.color),
-      metalness: 0.1, roughness: 0.15,
-      transmission: 0.6, transparent: true, opacity: 0.5,
-      thickness: 1.2, clearcoat: 1, clearcoatRoughness: 0.2,
+      color: new THREE.Color(c.color).lerp(new THREE.Color('#eef0f3'), 0.8),
+      metalness: 0.0, roughness: 0.3,
+      transmission: 0.32, transparent: true, opacity: 0.62,
+      thickness: 1.4, clearcoat: 0.7, clearcoatRoughness: 0.18,
     })
   );
   outer.position.y = revH / 2;
@@ -109,18 +112,18 @@ channels.forEach((c, i) => {
     new THREE.MeshStandardMaterial({
       color: marginColor(c.margin),
       emissive: marginColor(c.margin),
-      emissiveIntensity: 0.35,
-      metalness: 0.2, roughness: 0.4,
+      emissiveIntensity: 0.22,
+      metalness: 0.1, roughness: 0.5,
     })
   );
   inner.position.y = c.op >= 0 ? opH / 2 : -opH / 2;
   inner.castShadow = true;
   g.add(inner);
 
-  // 바닥 발광 링
+  // 바닥 링 (채널 아이덴티티 컬러 — 유일한 채널색 포인트)
   const ring = new THREE.Mesh(
     new THREE.RingGeometry(1.25, 1.5, 40),
-    new THREE.MeshBasicMaterial({ color: new THREE.Color(c.color), transparent: true, opacity: 0.35, side: THREE.DoubleSide })
+    new THREE.MeshBasicMaterial({ color: new THREE.Color(c.color), transparent: true, opacity: 0.45, side: THREE.DoubleSide })
   );
   ring.rotation.x = -Math.PI / 2;
   ring.position.y = 0.02;
@@ -135,7 +138,7 @@ channels.forEach((c, i) => {
   g.add(label);
 
   group.add(g);
-  bars.push({ data: c, group: g, outer, inner, ring, baseY: g.position.y, revH });
+  bars.push({ data: c, group: g, outer, inner, ring, ang, revH });
 });
 
 /* ---------------------------------------------------------------- 상호작용 */
@@ -163,11 +166,14 @@ function onMove(e) {
     controls.autoRotate = !bar && !selected;
   }
 }
-function onClick() {
-  if (hovered) select(hovered);
-}
+// 드래그(회전)와 클릭(선택)을 구분: 눌렀다 뗄 때 이동량이 작으면 클릭으로 처리
+let downX = 0, downY = 0;
 renderer.domElement.addEventListener('pointermove', onMove);
-renderer.domElement.addEventListener('pointerdown', onClick);
+renderer.domElement.addEventListener('pointerdown', (e) => { downX = e.clientX; downY = e.clientY; });
+renderer.domElement.addEventListener('pointerup', (e) => {
+  const moved = Math.hypot(e.clientX - downX, e.clientY - downY);
+  if (moved < 6 && hovered) select(hovered);
+});
 
 /* ---------------------------------------------------------------- 상세 패널 */
 const panel = document.getElementById('detail');
@@ -218,18 +224,33 @@ function select(bar) {
 function deselect() {
   selected = null;
   panel.classList.remove('open');
-  bars.forEach((b) => b.ring.material.opacity = 0.35);
-  controls.autoRotate = true;
+  bars.forEach((b) => b.ring.material.opacity = 0.45);
+  tweenTo(DEFAULT_CAM);
+  resumeRotateAfterTween = true; // 복귀 이동이 끝나면 자동회전 재개
 }
 document.addEventListener('keydown', (e) => e.key === 'Escape' && deselect());
 
-/* 카메라 포커스 (부드러운 이동) */
+/* 카메라 포커스 (부드러운 이동) — 원형 배치라 target/카메라 위치 모두 트윈 */
 let camTween = null;
+let resumeRotateAfterTween = false;
+const DEFAULT_CAM = { tx: 0, ty: 2.5, tz: 0, cx: 0, cy: 11, cz: 19 };
+function tweenTo(to) {
+  camTween = {
+    from: {
+      tx: controls.target.x, ty: controls.target.y, tz: controls.target.z,
+      cx: camera.position.x, cy: camera.position.y, cz: camera.position.z,
+    },
+    to, t: 0,
+  };
+}
 function focusCamera(bar) {
-  const tx = bar.group.position.x;
-  const from = { tx: controls.target.x, cx: camera.position.x };
-  const to = { tx, cx: tx * 0.4 };
-  camTween = { from, to, t: 0 };
+  const p = bar.group.position;
+  const camR = RADIUS + 11;
+  resumeRotateAfterTween = false;
+  tweenTo({
+    tx: p.x * 0.55, ty: 2.5, tz: p.z * 0.55,
+    cx: Math.cos(bar.ang) * camR, cy: 8.5, cz: Math.sin(bar.ang) * camR,
+  });
 }
 
 /* ---------------------------------------------------------------- 헤더 KPI */
@@ -259,8 +280,17 @@ function animate() {
   if (camTween && camTween.t < 1) {
     camTween.t = Math.min(1, camTween.t + 0.03);
     const e = 1 - Math.pow(1 - camTween.t, 3); // easeOutCubic
-    controls.target.x = camTween.from.tx + (camTween.to.tx - camTween.from.tx) * e;
-    camera.position.x = camTween.from.cx + (camTween.to.cx - camTween.from.cx) * e;
+    const { from, to } = camTween;
+    controls.target.x = from.tx + (to.tx - from.tx) * e;
+    controls.target.y = from.ty + (to.ty - from.ty) * e;
+    controls.target.z = from.tz + (to.tz - from.tz) * e;
+    camera.position.x = from.cx + (to.cx - from.cx) * e;
+    camera.position.y = from.cy + (to.cy - from.cy) * e;
+    camera.position.z = from.cz + (to.cz - from.cz) * e;
+    if (camTween.t >= 1 && resumeRotateAfterTween) {
+      controls.autoRotate = true;
+      resumeRotateAfterTween = false;
+    }
   }
 
   controls.update();
