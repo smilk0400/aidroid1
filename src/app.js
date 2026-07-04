@@ -278,7 +278,7 @@ function animate() {
   });
 
   if (camTween && camTween.t < 1) {
-    camTween.t = Math.min(1, camTween.t + 0.012); // 선택 시 카메라 이동 속도 (작을수록 느림)
+    camTween.t = Math.min(1, camTween.t + 0.0067); // 선택 시 카메라 이동 속도 ≈2.5초 (작을수록 느림)
     const e = 1 - Math.pow(1 - camTween.t, 3); // easeOutCubic
     const { from, to } = camTween;
     controls.target.x = from.tx + (to.tx - from.tx) * e;
